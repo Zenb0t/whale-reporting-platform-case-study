@@ -2,85 +2,93 @@
 
 ## **Summary**
 
-Built a modern, reliable alerting platform that delivers whale sighting notifications to vessels in under one second. Migrated from a legacy system without downtime, kept partners online through a compatibility layer, and handled thousands of daily active users across web and mobile.
+Modernized a legacy whale-alert platform into a low-latency service that delivers sub-second push and SMS notifications to vessels at scale. Led the backend design and zero downtime migration, solving geospatial and throughput challenges within inherited constraints to ship a reliable, production-ready system.
 
 ## **Problem**
 
-Conservation teams needed a dependable way to alert nearby vessels when whales are reported. The legacy system was slow to evolve, costly to maintain, and not designed for current reliability and scale requirements.
+Vessel strikes are a major threat to whales in busy shipping corridors. The conservation team relied on a legacy platform that was slow, costly to maintain, and could not meet the performance and reliability demands of modern, real-time conservation work.
 
-## **Context and constraints**
+We needed to:
 
-* Inherited Prisma as the ORM decision at project start.
+* Replace the legacy system without disrupting critical operations.
 
-* Required sub-second alert delivery across browsers and native apps.
+* Deliver alerts to vessels in under one second from sighting.
 
-* Thousands of DAU during peak periods.
+* Support thousands of daily active users across browser and native apps.
 
-* Backward compatibility for existing data providers and API consumers.
+* Maintain backward compatibility for existing API consumers and data providers.
 
-* Safe migration of several years of historical data.
+* Migrate large volumes of historical data safely and accurately.
 
-* All ingress flows through Cloudflare for routing and WAF.
+## **Context**
+
+* All ingress flows through Cloudflare for routing, WAF, and environment targeting during rollout.
+
+* External data providers and data consumers integrate via Cloudflare to the NestJS API so we can route to the right environment when needed.
+
+* Delivery model is push notifications and SMS only for browser and native. No WebSockets.
+
+* I inherited Prisma as the ORM decision and worked within that constraint.
 
 ## **Solution**
 
-Delivered a new NestJS backend with a notification pipeline that queues and fans out alerts through Redis backed workers. Used raw SQL for geospatial lookups where Prisma lacked native support. Kept external partners stable through a compatibility layer and executed a staged cutover from the legacy platform.
+I joined the project after some foundational technology choices were already in place, including Prisma ORM. While Prisma accelerated development for most queries, its lack of native geospatial processing meant we had to use raw SQL and focus on database-level optimizations to meet performance goals.
 
-## **Architecture and tech**
+We approached the rebuild in phases:
 
-* **Core**: NestJS with TypeScript. Prisma for most data access. Raw SQL for geospatial operations.
+* Parallel build and integration: developed the new system alongside the legacy platform to ensure feature parity.
 
-* **Database**: MySQL with targeted indexing for proximity queries and high read paths.
+* Data migration and ETL: designed and ran pipelines to extract, transform, and load historical data, validating against both legacy and new schemas.
 
-* **Notifications**: Redis as a notification queue. Horizontally scaled workers dispatch push and SMS via Azure Notification Hub and Azure Communication Services.
+* Compatibility layer: implemented backward-compatible APIs so existing partners could transition without downtime.
 
-* **Ingress**: Cloudflare for routing, WAF, and environment targeting to the origin.
+* Gradual cutover: staged rollout with monitoring and fallback readiness.
 
-* **ETL**: Custom pipelines for extraction, transformation, validation, and reconciliation of historical data.
+## **Architecture & Tech**
 
-* **Deploy and ops**: Azure App Services, containerized builds, CI/CD with GitHub Actions.
+* **Backend**: NestJS (TypeScript) with Prisma ORM for core queries, supplemented by raw SQL for geospatial lookups.
 
-* **Observability**: Azure Application Insights and Sentry for performance baselines and error tracking.
+* **Database**: MySQL with geospatial indexes and query-level tuning for proximity calculations.
 
-## **Engineering challenges**
+* **Ingress and routing**: Cloudflare for routing and WAF. Partners and clients hit Cloudflare first, then the API.
 
-* **ORM limitations**: Implemented raw SQL for geo queries and tuned indexes to hit performance targets.
+* **Notifications**: Push (browser and native) and SMS via Azure Notification Hub and Azure Communication Services. No WebSockets.
 
-* **Horizontal scale**: Designed Redis-backed workers to process high alert volumes in parallel.
+* **Message queue**: Redis for notification queuing and horizontal scaling of alert delivery workers.
 
-* **Compatibility**: Built a translation layer so partners could continue using legacy request and response formats.
+* **ETL**: Custom pipelines for legacy data migration, including transformation, validation, and reconciliation.
 
-* **Zero-downtime migration**: Ran legacy and new systems in parallel with staged traffic cutover.
+* **Deployment**: Azure App Services, GitHub Actions for CI/CD, containerized builds for consistency.
 
-## **Migration and compatibility approach**
+* **Monitoring**: Sentry and Azure Application Insights for error tracking, performance profiling, and operational metrics.
 
-1. Parallel build to achieve feature parity.
+## **Engineering Challenges**
 
-2. Data validation against both legacy and new schemas.
+* **Inherited constraints**: Worked within existing Prisma adoption, extending with raw SQL for missing geospatial capabilities.
 
-3. Backward-compatible endpoints for external partners.
+* **Performance tuning**: Optimized MySQL queries with indexing, query refactoring, and targeted caching at the query execution level.
 
-4. Gradual traffic shift through Cloudflare with monitoring and clear rollback.
+* **Horizontal scaling**: Designed Redis-backed message queues to process high volumes of notifications in parallel.
+
+* **Edge routing and rollout**: Used Cloudflare to control traffic and support staged cutover with straightforward rollback.
+
+* **Zero-downtime migration**: Ran both systems in parallel during cutover to guarantee uninterrupted service.
 
 ## **Impact**
 
-* Under one second average from sighting submission to delivered alert.
+* Under one second average from whale sighting submission to vessel alert.
 
-* Seamless retirement of the legacy platform with no downtime for end users.
+* Seamless retirement of the legacy platform with zero downtime.
 
-* Successful migration of historical data without loss.
+* Successful migration of years of historical data without loss.
 
-* Continued service for all partner integrations and data providers.
+* Maintained uninterrupted service for all external API consumers and data providers.
 
-* Improved operational efficiency and a simpler support model.
+* Improved alert delivery capacity through horizontally scaled notification processing.
 
-## **My role**
-
-Backend architect and lead developer. Responsible for the alert pipeline design, database strategy for geospatial lookups, Redis worker model, ETL design, and the staged cutover plan.
-
-## **Timeline**
-
-Approximately eight months with a team of four engineers.
+**Role**: Backend Architect and Lead Developer  
+ **Team Size**: 4 developers  
+ **Timeframe**: 8 months
 
 ## **Diagram**
 
